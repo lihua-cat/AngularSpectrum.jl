@@ -37,20 +37,28 @@ PRECISION = Float32
 N = 1000
 u_h = convert.(Complex{PRECISION}, u)
 trans_h = convert.(Complex{PRECISION}, trans)
-plan_h, iplan_h = plan_fft!(u_h), plan_ifft!(u_h)
-t1 = @elapsed for _ in 1:N
+plan_h, iplan_h = plan_fft!(u_h, flags=FFTW.MEASURE), plan_ifft!(u_h, flags=FFTW.MEASURE)
+# warm-up
+free_propagate!(u_h, trans_h, plan_h, iplan_h)
+u_h .*= ap_mask
+t1 = @elapsed for _ in 2:N
     free_propagate!(u_h, trans_h, plan_h, iplan_h)
     u_h .*= ap_mask
 end
+t1 = round(t1, digits = 2)
 # gpu
 u_d = CuArray{Complex{PRECISION}}(u)
 trans_d = CuArray{Complex{PRECISION}}(trans)
 plan_d, iplan_d = plan_fft!(u_d), plan_ifft!(u_d)
 ap_mask_d = CuArray(ap_mask)
-t2 = @elapsed for _ in 1:N
+# warm-up
+free_propagate!(u_d, trans_d, plan_d, iplan_d)
+u_d .*= ap_mask_d
+t2 = @elapsed for _ in 2:N
     free_propagate!(u_d, trans_d, plan_d, iplan_d)
     u_d .*= ap_mask_d
 end
+t2 = round(t2, digits = 2)
 ```
 4. visualization
 ```julia
