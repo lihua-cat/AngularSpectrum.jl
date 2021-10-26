@@ -4,5 +4,5 @@ function phase_shift(xs, ys, radius, λ)
     δ = isinf(radius) ? 
         ones(Nx, Ny) .* zero(radius) : 
         @. radius - √(radius^2 - xs^2 - yts^2)
-    δps = @. cispi(-2 / λ * 2 * δ)
+    δps = @. cispi(-2 / λ * 2 * δ) # second `2` represent forth-back
 end
