@@ -19,6 +19,13 @@ function spatial_frequency(x::AbstractVector, y::AbstractVector, shift::Bool = t
     spatial_frequency(X, Y, Nx, Ny, shift)
 end
 
+function spatial_frequency(X::Unitful.Length, Y::Unitful.Length, Nx::Signed, Ny::Signed, shift::Bool = true)
+    uu = unit(X) 
+    X_val, Y_val = ustrip(uu, X), ustrip(uu, Y)
+    νx, νy = spatial_frequency(X_val, Y_val, Nx, Ny, shift)
+    return (; x = νx * uu, y = νy * uu)
+end
+
 
 ## test
 # X, Y = 8.0, 4.0

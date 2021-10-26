@@ -1,6 +1,7 @@
 module AngularSpectrum
 
 using FFTW
+using Unitful
 
 include("utils.jl")
 
