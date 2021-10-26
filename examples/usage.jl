@@ -66,8 +66,8 @@ let
     for i in 1:3
         poly!(ax[i], ap_poly, color = :transparent, strokecolor = :grey, strokewidth = 1)
         h = heatmap!(ax[i], x, y, intensity[:, :, i], colormap = :plasma)
-        # Colorbar(fig[2, i], h, width = Relative(1), vertical = false)
+        Colorbar(fig[2, i], h, width = Relative(1), vertical = false)
     end
-    display(fig)
+    fig
     # save("examples/usage.png", fig)
 end
