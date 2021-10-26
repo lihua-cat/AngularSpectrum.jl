@@ -1,21 +1,10 @@
-# AngularSpectrum.jl
-
-AngularSpectrum.jl is a Julia package for simulation of 2D wave propagation in free space based on angular spectrum theory.
-
-## Installation
-Currently not registered and under development. But the main branch can be installed with:
-```julia
-julia> ] add https://github.com/lihua-cat/AngularSpectrum.jl
-```
-
-## Features
-* wave propagation between 2 planes
-* wave propagation between 1 plane and 1 curved surface.
-* wave propagation between 2 curved surfaces.
-
 ## Usage
-1. given a initial uniform 2D optical field distribution
-```julia
+using AngularSpectrum
+using FFTW
+using CUDA
+using Unitful
+using CairoMakie
+## 1. given a initial uniform 2D optical field distribution
 X, Y = 8.0u"cm", 8.0u"cm"
 Nx, Ny = 1024, 1024
 x = collect(0:Nx-1) * X / Nx
@@ -23,15 +12,11 @@ y = collect(0:Ny-1) * Y / Ny
 ap = (x = 6.0u"cm", y = 6.0u"cm")
 ap_mask = (abs.(x .- X/2) .< ap.x/2) .* transpose(abs.(y .- Y/2) .< ap.y/2) 
 u = ones(ComplexF64, Nx, Ny) .* ap_mask
-```
-2. compute propagation function of angular spectrum
-```julia
+## 2. compute propagation function of angular spectrum
 λ = 10.6u"μm"
 d = 1.5u"m"
 trans = propagation_func(X, Y, Nx, Ny, λ, d)
-```
-3. angular spectrum approach
-```julia
+## 3. angular spectrum approach
 # cpu
 PRECISION = Float32
 N = 1000
@@ -51,9 +36,7 @@ t2 = @elapsed for _ in 1:N
     free_propagate!(u_d, trans_d, plan_d, iplan_d)
     u_d .*= ap_mask_d
 end
-```
-4. visualization
-```julia
+## 4. visualization
 let
     uu = u"mm"
     Xv, Yv = ustrip(uu, X), ustrip(uu, Y)
@@ -78,9 +61,5 @@ let
         Colorbar(fig[2, i], h, width = Relative(1), vertical = false)
     end
     fig
+    # save("examples/usage.png", fig)
 end
-```
-![](examples/usage.png)
-
-## Reference
-* Goodman, Joseph W. *Introduction to Fourier optics*
