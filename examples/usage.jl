@@ -80,22 +80,20 @@ let
     intensity[:, :, 5] = abs2.(u_d_F64)
     max_value = maximum(intensity)
 
-    fig = Figure(backgroundcolor = :Wheat, fontsize = 20)
+    fig = Figure(resolution = (1100, 750), backgroundcolor = :Wheat, fontsize = 20)
     gl1 = fig[1, 1] = GridLayout()
     gl2 = fig[1, 2] = GridLayout()
-    colsize!(fig.layout, 1, Relative(0.29))
-    colgap!(gl2, 10)
-    rowgap!(gl2, 10)
-
+    colsize!(fig.layout, 1, Relative(0.27))
+    
     title = ["initial field", 
              "CPU, elapsed: $(round(t_h_F32, digits=2)) s",
              "GPU, elapsed: $(round(t_d_F32, digits=2)) s",
              "CPU, elapsed: $(round(t_h_F64, digits=2)) s", 
              "GPU, elapsed: $(round(t_d_F64, digits=2)) s"]
 
-    ax0 = Axis(gl1[1, 1], aspect = AxisAspect(Xv/Yv), title = title[1])
-    ax25 = [Axis(gl2[i, j], aspect = AxisAspect(Xv/Yv), title = title[2(i-1)+j+1]) for i in 1:2, j in 1:2]
-    ax = [ax0, ax25...]
+    ax1 = Axis(gl1[1, 1], aspect = AxisAspect(Xv/Yv), title = title[1])
+    ax2 = [Axis(gl2[i, j], aspect = AxisAspect(Xv/Yv), title = title[2(i-1)+j+1]) for i in 1:2, j in 1:2]
+    ax = [ax1, ax2...]
 
     Label(fig[0, :], "Nx = $Nx, Ny = $Ny, $N loops", textsize = 30)
     Label(gl2[1, 3], "FP32", textsize = 24, rotation = -pi/2, tellheight = false)
@@ -106,6 +104,7 @@ let
         heatmap!(ax[i], x, y, intensity[:, :, i], colormap = :plasma, colorrange=(0, max_value))
     end
     Colorbar(gl2[:, 4], limits = (0, max_value), height = Relative(1))
+
     fig
-    # save("examples/usage.png", fig)
+    save("examples/usage.png", fig)
 end
