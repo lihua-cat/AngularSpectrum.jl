@@ -10,10 +10,11 @@ Nx, Ny = 1024, 1024
 x = collect(0:Nx-1) * X / Nx
 y = collect(0:Ny-1) * Y / Ny
 ap = (x = 6.0u"cm", y = 6.0u"cm")
-ap_mask = (abs.(x .- X/2) .< ap.x/2) .* transpose(abs.(y .- Y/2) .< ap.y/2) 
+ap_mask = (abs.(x .- X/2) .< ap.x/2) .* transpose(abs.(y .- Y/2) .< ap.y/2)
+ap_mask = ap_mask .* reverse(ap_mask)
 u = ones(ComplexF64, Nx, Ny) .* ap_mask
 ## 2. compute propagation function of angular spectrum
-λ = 10.6u"μm"
+λ = 1.315u"μm"
 d = 1.5u"m"
 trans = propagation_func(X, Y, Nx, Ny, λ, d)
 ## 3. angular spectrum approach
@@ -44,6 +45,10 @@ t2 = @elapsed for _ in 2:N
     u_d .*= ap_mask_d
 end
 t2 = round(t2, digits = 2)
+
+u_h ≈ Array(u_d) ? println("Test 1: Pass") : println("Test 1: Fail")
+@views u_h[1:Nx÷2, :] ≈ u_h[end:-1:Nx÷2+1, :] ? println("Test 2: Pass") : println("Test 2: Fail")
+@views u_h[:, 1:Ny÷2] ≈ u_h[:, end:-1:Ny÷2+1] ? println("Test 3: Pass") : println("Test 3: Fail")
 ## 4. visualization
 let
     uu = u"mm"
