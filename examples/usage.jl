@@ -1,6 +1,6 @@
 ## Usage
 using AngularSpectrum
-using FFTW
+using FFTW, LinearAlgebra
 using CUDA
 using Unitful
 using GLMakie
@@ -12,43 +12,56 @@ y = collect(0:Ny-1) * Y / Ny
 ap = (x = 6.0u"cm", y = 6.0u"cm")
 ap_mask = (abs.(x .- X/2) .< ap.x/2) .* transpose(abs.(y .- Y/2) .< ap.y/2)
 ap_mask = ap_mask .* reverse(ap_mask)
-u = ones(ComplexF64, Nx, Ny) .* ap_mask
+u0 = ones(ComplexF64, Nx, Ny) .* ap_mask
 ## 2. compute propagation function of angular spectrum
 λ = 1.315u"μm"
 d = 1.5u"m"
 trans = propagation_func(X, Y, Nx, Ny, λ, d)
 ## 3. angular spectrum approach
-# cpu
-PRECISION = Float32
-N = 1000
-u_h = convert.(Complex{PRECISION}, u)
-trans_h = convert.(Complex{PRECISION}, trans)
-plan_h, iplan_h = plan_fft!(u_h, flags=FFTW.MEASURE), plan_ifft!(u_h, flags=FFTW.MEASURE)
-# warm-up
-free_propagate!(u_h, trans_h, plan_h, iplan_h)
-u_h .*= ap_mask
-t1 = @elapsed for _ in 2:N
-    free_propagate!(u_h, trans_h, plan_h, iplan_h)
-    u_h .*= ap_mask
+function Fox_Li_method(u0::AbstractMatrix, trans::AbstractMatrix, ap::AbstractMatrix{Bool}, N::Signed, precision::Type{<:AbstractFloat}; gpu::Bool)
+    if gpu
+        u = CuArray{Complex{precision}}(u0)
+        trans = CuArray{Complex{precision}}(trans)
+        plan, iplan = plan_fft!(u), plan_ifft!(u)
+        ap = CuArray(ap)
+    else
+        u = copy(convert(Matrix{Complex{precision}}, u0))
+        trans = convert(Matrix{Complex{precision}}, trans)
+        plan, iplan = plan_fft!(u, flags=FFTW.MEASURE), plan_ifft!(u, flags=FFTW.MEASURE)
+    end
+    t = @elapsed for _ in 1:N
+        free_propagate!(u, trans, plan, iplan)
+        u .*= ap
+    end
+    return Array(u), t
 end
-t1 = round(t1, digits = 2)
-# gpu
-u_d = CuArray{Complex{PRECISION}}(u)
-trans_d = CuArray{Complex{PRECISION}}(trans)
-plan_d, iplan_d = plan_fft!(u_d), plan_ifft!(u_d)
-ap_mask_d = CuArray(ap_mask)
-# warm-up
-free_propagate!(u_d, trans_d, plan_d, iplan_d)
-u_d .*= ap_mask_d
-t2 = @elapsed for _ in 2:N
-    free_propagate!(u_d, trans_d, plan_d, iplan_d)
-    u_d .*= ap_mask_d
-end
-t2 = round(t2, digits = 2)
 
-u_h ≈ Array(u_d) ? println("Test 1: Pass") : println("Test 1: Fail")
-@views u_h[1:Nx÷2, :] ≈ u_h[end:-1:Nx÷2+1, :] ? println("Test 2: Pass") : println("Test 2: Fail")
-@views u_h[:, 1:Ny÷2] ≈ u_h[:, end:-1:Ny÷2+1] ? println("Test 3: Pass") : println("Test 3: Fail")
+N = 1000
+
+u_h_F32, t_h_F32 = Fox_Li_method(u0, trans, ap_mask, N, Float32, gpu = false)
+u_h_F64, t_h_F64 = Fox_Li_method(u0, trans, ap_mask, N, Float64, gpu = false)
+u_d_F32, t_d_F32 = Fox_Li_method(u0, trans, ap_mask, N, Float32, gpu = true)
+u_d_F64, t_d_F64 = Fox_Li_method(u0, trans, ap_mask, N, Float64, gpu = true)
+
+error_F32 = norm(u_h_F32 - u_d_F32) ./ norm(u_h_F32)
+error_F64 = norm(u_h_F64 - u_d_F64) ./ norm(u_h_F64)
+
+println("\n- FP32 ")
+print("Consistency between CPU and GPU : ")
+u_h_F32 ≈ u_d_F32 ? println("Pass") : println("Fail")
+print("Symmetry about y-axis : ")
+@views u_h_F32[1:Nx÷2, :] ≈ u_h_F32[end:-1:Nx÷2+1, :] ? println("Pass") : println("Fail")
+print("Symmetry about x-axis : ")
+@views u_h_F32[:, 1:Ny÷2] ≈ u_h_F32[:, end:-1:Ny÷2+1] ? println("Pass") : println("Fail")
+println("Relative error : $error_F32")
+println("\n- FP64 ")
+print("Consistency between CPU and GPU : ")
+u_h_F64 ≈ u_d_F64 ? println("Pass") : println("Fail")
+print("Symmetry about y-axis : ")
+@views u_h_F64[1:Nx÷2, :] ≈ u_h_F64[end:-1:Nx÷2+1, :] ? println("Pass") : println("Fail")
+print("Symmetry about x-axis : ")
+@views u_h_F64[:, 1:Ny÷2] ≈ u_h_F64[:, end:-1:Ny÷2+1] ? println("Pass") : println("Fail")
+println("Relative error : $error_F64")
 ## 4. visualization
 let
     uu = u"mm"
@@ -59,20 +72,40 @@ let
     ap_poly = Point2f0[(apx1, apy1), (apx1, apy2), (apx2, apy2), (apx2, apy1)]
     x = collect(0:Nx-1) * Xv / Nx
     y = collect(0:Ny-1) * Yv / Ny
-    intensity = Array{Complex{PRECISION}, 3}(undef, Nx, Ny, 3)
-    intensity[:, :, 1] = abs2.(u)
-    intensity[:, :, 2] = abs2.(u_h)
-    intensity[:, :, 3] = Array(abs2.(u_d))
+    intensity = Array{AbstractFloat, 3}(undef, Nx, Ny, 5)
+    intensity[:, :, 1] = abs2.(u0)
+    intensity[:, :, 2] = abs2.(u_h_F32)
+    intensity[:, :, 3] = abs2.(u_d_F32)
+    intensity[:, :, 4] = abs2.(u_h_F64)
+    intensity[:, :, 5] = abs2.(u_d_F64)
+    max_value = maximum(intensity)
 
-    fig = Figure(resolution = (1400, 600))
-    title = ["initial field (Nx = $Nx, Ny = $Ny)", "cpu(i9-11900KB) $N loops, elapsed: $t1 s", "gpu(RTX3060Ti) $N loops, elapsed: $t2 s"]
-    ax = [Axis(fig[1, i], aspect = AxisAspect(Xv/Yv), title = title[i]) for i in 1:3]
+    fig = Figure(backgroundcolor = :Wheat, fontsize = 20)
+    gl1 = fig[1, 1] = GridLayout()
+    gl2 = fig[1, 2] = GridLayout()
+    colsize!(fig.layout, 1, Relative(0.29))
+    colgap!(gl2, 10)
+    rowgap!(gl2, 10)
 
-    for i in 1:3
+    title = ["initial field", 
+             "CPU, elapsed: $(round(t_h_F32, digits=2)) s",
+             "GPU, elapsed: $(round(t_d_F32, digits=2)) s",
+             "CPU, elapsed: $(round(t_h_F64, digits=2)) s", 
+             "GPU, elapsed: $(round(t_d_F64, digits=2)) s"]
+
+    ax0 = Axis(gl1[1, 1], aspect = AxisAspect(Xv/Yv), title = title[1])
+    ax25 = [Axis(gl2[i, j], aspect = AxisAspect(Xv/Yv), title = title[2(i-1)+j+1]) for i in 1:2, j in 1:2]
+    ax = [ax0, ax25...]
+
+    Label(fig[0, :], "Nx = $Nx, Ny = $Ny, $N loops", textsize = 30)
+    Label(gl2[1, 3], "FP32", textsize = 24, rotation = -pi/2, tellheight = false)
+    Label(gl2[2, 3], "FP64", textsize = 24, rotation = -pi/2, tellheight = false)
+    
+    for i in 1:5
         poly!(ax[i], ap_poly, color = :transparent, strokecolor = :grey, strokewidth = 1)
-        h = heatmap!(ax[i], x, y, intensity[:, :, i], colormap = :plasma)
-        Colorbar(fig[2, i], h, width = Relative(1), vertical = false)
+        heatmap!(ax[i], x, y, intensity[:, :, i], colormap = :plasma, colorrange=(0, max_value))
     end
+    Colorbar(gl2[:, 4], limits = (0, max_value), height = Relative(1))
     fig
     # save("examples/usage.png", fig)
 end
