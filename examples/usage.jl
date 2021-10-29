@@ -1,6 +1,9 @@
 ## Usage
 using AngularSpectrum
-using FFTW, LinearAlgebra
+using FFTW
+FFTW.set_num_threads(8)
+import LinearAlgebra: norm
+# using MKL
 using CUDA
 using Unitful
 using GLMakie
@@ -105,6 +108,6 @@ let
     end
     Colorbar(gl2[:, 4], limits = (0, max_value), height = Relative(1))
 
+    # save("examples/usage.png", fig)
     fig
-    save("examples/usage.png", fig)
 end

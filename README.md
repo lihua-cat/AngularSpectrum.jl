@@ -135,6 +135,38 @@ let
 end
 ```
 ![](examples/usage.png)
+## Benchmark
+
+### Systeminfo:
+* CPU: 11th Gen Intel(R) Core(TM) i9-11900KB @ 3.30GHz 8C16T
+* GPU: NVIDIA GeForce RTX 3060 Ti
+
+### FFT 2D
+
+| FP64 | case    |  elapsed_ms  | performance |
+| - | ------- | --------- | ------- |
+| 1 | CPU 1T  | 5.1142 | 0.230437     |
+| 2 | CPU 8T  | 1.1785 | 1.0 |  
+| 3 | CPU 16T | 0.918 | 1.28377 |
+| 4 | GPU     | 0.8078 | 1.4589 |
+
+| FP32 | case    |  elapsed_ms  | performance |
+| - | ------- | --------- | ------- |
+| 1 | CPU 1T  | 3.1138 |  0.27163    |
+| 2 | CPU 8T  | 0.8458 |  1.0|
+| 3 | CPU 16T | 0.8663 |  0.976336|
+| 4 | GPU     | 0.1171 | 7.22289 |
+
+### .*=
+| FP64 | case    |  elapsed_ms  | performance |
+| - | ------- | --------- | ------- |
+| 1 | CPU     | 1.5187 | 1.0     |
+| 2 | GPU     | 0.1719 | 8.83479 |
+
+| FP32 | case    |  elapsed_ms  | performance |
+| - | ------- | --------- | ------- |
+| 1 | CPU     | 0.8175 |  1.0    |
+| 2 | GPU     | 0.0854 | 9.5726 |
 
 ## Reference
 * Goodman, Joseph W. *Introduction to Fourier optics*
