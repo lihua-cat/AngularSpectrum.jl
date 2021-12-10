@@ -1,7 +1,7 @@
 name = "AngularSpectrum"
 uuid = "12d917d2-edbc-43fc-9cae-d13b99a88565"
 authors = ["Wemko <yinyangxiangsheng@gmail.com> and contributors"]
-version = "1.1.0"
+version = "1.2.0"
 
 [deps]
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"

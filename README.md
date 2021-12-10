@@ -138,7 +138,7 @@ end
 ## Benchmark
 
 ### Systeminfo:
-* CPU: 11th Gen Intel(R) Core(TM) i9-11900KB @ 3.30GHz 8C16T
+* CPU: 11th Gen Intel(R) Core(TM) i9-11900KB
 * GPU: NVIDIA GeForce RTX 3060 Ti
 
 ### FFT 2D

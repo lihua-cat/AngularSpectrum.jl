@@ -1,6 +1,6 @@
 function propagation_func(νx::AbstractVector, νy::AbstractVector, λ::Real, d::Real, evanescent::Bool = true)
-    isuniform(νx) || error("νx is not shift to center") 
-    isuniform(νy) || error("νy is not shift to center") 
+    isshift(νx) || error("νx is not shift to center") 
+    isshift(νy) || error("νy is not shift to center") 
     α, β = λ * νx, λ * νy
     βt = transpose(β)
     circ = @. α^2 + βt^2

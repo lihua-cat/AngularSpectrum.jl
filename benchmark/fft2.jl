@@ -34,7 +34,7 @@ df_F64 = DataFrame(case = ["CPU 1T", "CPU $(cpu.cores)T", "CPU $(cpu.threads)T",
                time_ms = [t1, t2, t3, t4] * 1000, 
                performance = t2 ./ [t1, t2, t3, t4])
 println("FP64:")
-show(df_F64, allrows = true)
+println(df_F64)
 
 ## FP32
 u_F32 = rand(ComplexF32, Nx, Ny)
@@ -56,4 +56,4 @@ df_F32 = DataFrame(case = ["CPU 1T", "CPU $(cpu.cores)T", "CPU $(cpu.threads)T",
                    time_ms = [t1, t2, t3, t4] * 1000, 
                    performance = t2 ./ [t1, t2, t3, t4])
 println("\nFP32:")
-show(df_F32, allrows = true)
+println(df_F32)

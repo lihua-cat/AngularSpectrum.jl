@@ -13,7 +13,7 @@ Nx, Ny = 1024, 1024
 x = collect(0:Nx-1) * X / Nx
 y = collect(0:Ny-1) * Y / Ny
 ap = (x = 6.0u"cm", y = 6.0u"cm")
-ap_mask = (abs.(x .- X/2) .< ap.x/2) .* transpose(abs.(y .- Y/2) .< ap.y/2)
+ap_mask = (abs.(x .- X / 2) .< ap.x / 2) .* transpose(abs.(y .- Y / 2) .< ap.y / 2)
 ap_mask = ap_mask .* reverse(ap_mask)
 u0 = ones(ComplexF64, Nx, Ny) .* ap_mask
 ## 2. compute propagation function of angular spectrum
@@ -30,9 +30,9 @@ function Fox_Li_method(u0::AbstractMatrix, trans::AbstractMatrix, ap::AbstractMa
     else
         u = copy(convert(Matrix{Complex{precision}}, u0))
         trans = convert(Matrix{Complex{precision}}, trans)
-        plan, iplan = plan_fft!(u, flags=FFTW.MEASURE), plan_ifft!(u, flags=FFTW.MEASURE)
+        plan, iplan = plan_fft!(u, flags = FFTW.MEASURE), plan_ifft!(u, flags = FFTW.MEASURE)
     end
-    t = @elapsed for _ in 1:N
+    t = @elapsed for _ = 1:N
         free_propagate!(u, trans, plan, iplan)
         u .*= ap
     end
@@ -75,7 +75,7 @@ let
     ap_poly = Point2f0[(apx1, apy1), (apx1, apy2), (apx2, apy2), (apx2, apy1)]
     x = collect(0:Nx-1) * Xv / Nx
     y = collect(0:Ny-1) * Yv / Ny
-    intensity = Array{AbstractFloat, 3}(undef, Nx, Ny, 5)
+    intensity = Array{AbstractFloat,3}(undef, Nx, Ny, 5)
     intensity[:, :, 1] = abs2.(u0)
     intensity[:, :, 2] = abs2.(u_h_F32)
     intensity[:, :, 3] = abs2.(u_d_F32)
@@ -87,24 +87,24 @@ let
     gl1 = fig[1, 1] = GridLayout()
     gl2 = fig[1, 2] = GridLayout()
     colsize!(fig.layout, 1, Relative(0.27))
-    
-    title = ["initial field", 
-             "CPU, elapsed: $(round(t_h_F32, digits=2)) s",
-             "GPU, elapsed: $(round(t_d_F32, digits=2)) s",
-             "CPU, elapsed: $(round(t_h_F64, digits=2)) s", 
-             "GPU, elapsed: $(round(t_d_F64, digits=2)) s"]
 
-    ax1 = Axis(gl1[1, 1], aspect = AxisAspect(Xv/Yv), title = title[1])
-    ax2 = [Axis(gl2[i, j], aspect = AxisAspect(Xv/Yv), title = title[2(i-1)+j+1]) for i in 1:2, j in 1:2]
+    title = ["initial field",
+        "CPU, elapsed: $(round(t_h_F32, digits=2)) s",
+        "GPU, elapsed: $(round(t_d_F32, digits=2)) s",
+        "CPU, elapsed: $(round(t_h_F64, digits=2)) s",
+        "GPU, elapsed: $(round(t_d_F64, digits=2)) s"]
+
+    ax1 = Axis(gl1[1, 1], aspect = AxisAspect(Xv / Yv), title = title[1])
+    ax2 = [Axis(gl2[i, j], aspect = AxisAspect(Xv / Yv), title = title[2(i-1)+j+1]) for i = 1:2, j = 1:2]
     ax = [ax1, ax2...]
 
     Label(fig[0, :], "Nx = $Nx, Ny = $Ny, $N loops", textsize = 30)
-    Label(gl2[1, 3], "FP32", textsize = 24, rotation = -pi/2, tellheight = false)
-    Label(gl2[2, 3], "FP64", textsize = 24, rotation = -pi/2, tellheight = false)
-    
-    for i in 1:5
+    Label(gl2[1, 3], "FP32", textsize = 24, rotation = -pi / 2, tellheight = false)
+    Label(gl2[2, 3], "FP64", textsize = 24, rotation = -pi / 2, tellheight = false)
+
+    for i = 1:5
         poly!(ax[i], ap_poly, color = :transparent, strokecolor = :grey, strokewidth = 1)
-        heatmap!(ax[i], x, y, intensity[:, :, i], colormap = :plasma, colorrange=(0, max_value))
+        heatmap!(ax[i], x, y, intensity[:, :, i], colormap = :plasma, colorrange = (0, max_value))
     end
     Colorbar(gl2[:, 4], limits = (0, max_value), height = Relative(1))
 
