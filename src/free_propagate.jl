@@ -7,3 +7,8 @@ function free_propagate!(u, trans, plan, iplan)
     u .*= trans
     iplan * u
 end
+
+function plan_as(u)
+    p, ip = plan_fft!(u), plan_ifft!(u)
+    return (p, ip)
+end
